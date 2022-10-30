@@ -9,5 +9,14 @@ class GraphType(Enum):
     GOLD_BITS = 1
     I_COMP = 2
     Q_COMP = 3
-    RESPONSE = 4
-    RESTORED = 5
+    QPSK = 4
+    RESPONSE = 5
+    RESTORED = 6
+
+
+class ShiftRegisterType(Enum):
+    """
+    Возможные конфигурации сдвигового регистра
+    """
+    FIVE_THREE = 0
+    FIVE_FOUR_THREE_TWO = 1

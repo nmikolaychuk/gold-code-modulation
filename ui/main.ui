@@ -987,7 +987,7 @@ border-radius: 20px;</string>
                 <property name="frameShadow">
                  <enum>QFrame::Raised</enum>
                 </property>
-                <layout class="QVBoxLayout" name="verticalLayout_11">
+                <layout class="QHBoxLayout" name="horizontalLayout_5">
                  <property name="spacing">
                   <number>0</number>
                  </property>
@@ -1003,7 +1003,38 @@ border-radius: 20px;</string>
                  <property name="bottomMargin">
                   <number>0</number>
                  </property>
-                 <item alignment="Qt::AlignHCenter">
+                 <item>
+                  <widget class="QPushButton" name="calc_filters">
+                   <property name="minimumSize">
+                    <size>
+                     <width>200</width>
+                     <height>30</height>
+                    </size>
+                   </property>
+                   <property name="maximumSize">
+                    <size>
+                     <width>200</width>
+                     <height>30</height>
+                    </size>
+                   </property>
+                   <property name="font">
+                    <font>
+                     <family>Century Gothic</family>
+                     <pointsize>10</pointsize>
+                    </font>
+                   </property>
+                   <property name="styleSheet">
+                    <string notr="true">background-color: rgb(21, 28, 77);
+color: rgb(255, 255, 255);
+border: 1px solid black;
+border-radius: 15px;</string>
+                   </property>
+                   <property name="text">
+                    <string>Расчёт СФ</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QPushButton" name="draw_button">
                    <property name="sizePolicy">
                     <sizepolicy hsizetype="Minimum" vsizetype="Fixed">

@@ -63,6 +63,7 @@ class MplGraphicsModulated(FigureCanvas):
             IIQQ
             CCCC
             DDDD
+            EEEE
             """)
 
         self.ax1 = axd['A']
@@ -71,6 +72,7 @@ class MplGraphicsModulated(FigureCanvas):
         self.ax4 = axd['Q']
         self.ax5 = axd['C']
         self.ax6 = axd['D']
+        self.ax7 = axd['E']
         self.add_text()
 
         # Инициализация
@@ -94,10 +96,12 @@ class MplGraphicsModulated(FigureCanvas):
         self.ax3.grid(linestyle="dotted", alpha=0.65)
         self.ax4.set_title("Квадратурная компонента (Q)")
         self.ax4.grid(linestyle="dotted", alpha=0.65)
-        self.ax5.set_title("Отклики согласованных фильтров")
+        self.ax5.set_title("QPSK сигнал")
         self.ax5.grid(linestyle="dotted", alpha=0.65)
-        self.ax6.set_title("Восстановленный информационный сигнал")
+        self.ax6.set_title("Отклики согласованных фильтров")
         self.ax6.grid(linestyle="dotted", alpha=0.65)
+        self.ax7.set_title("Восстановленный информационный сигнал")
+        self.ax7.grid(linestyle="dotted", alpha=0.65)
 
     def plot_graph_ax1(self, x_list: list, y_list: list):
         """
@@ -143,20 +147,31 @@ class MplGraphicsModulated(FigureCanvas):
         self.ax4.plot(x_list, y_list, linestyle="-", markersize=2, color='brown')
         self.ax4.margins(y=0.2, x=0.01)
 
-    def plot_graph_ax5(self, x1: list, y1: list, x2: list, y2: list,
+    def plot_graph_ax5(self, x_list: list, y_list: list):
+        """
+        Построение QPSK сигнала.
+
+        :param x_list: Список временный отсчётов.
+        :param y_list: Список значений.
+        :return: None.
+        """
+        self.ax5.plot(x_list, y_list, linestyle="-", markersize=2, color='cadetblue')
+        self.ax5.margins(y=0.2, x=0.01)
+
+    def plot_graph_ax6(self, x1: list, y1: list, x2: list, y2: list,
                        x3: list, y3: list, x4: list, y4: list):
         """
         Построение откликов после свёртки.
 
         :return: None.
         """
-        self.ax5.plot(x1, y1, linestyle="-", markersize=2, color='darksalmon')
-        self.ax5.plot(x2, y2, linestyle="-", markersize=2, color='olivedrab')
-        self.ax5.plot(x3, y3, linestyle="-", markersize=2, color='darkkhaki')
-        self.ax5.plot(x4, y4, linestyle="-", markersize=2, color='cornflowerblue')
-        self.ax5.margins(y=0.2, x=0.01)
+        self.ax6.plot(x1, y1, linestyle="-", markersize=2, color='darksalmon')
+        self.ax6.plot(x2, y2, linestyle="-", markersize=2, color='olivedrab')
+        self.ax6.plot(x3, y3, linestyle="-", markersize=2, color='darkkhaki')
+        self.ax6.plot(x4, y4, linestyle="-", markersize=2, color='cornflowerblue')
+        self.ax6.margins(y=0.2, x=0.01)
 
-    def plot_graph_ax6(self, x_list: list, y_list: list):
+    def plot_graph_ax7(self, x_list: list, y_list: list):
         """
         Построение восстановленной информации.
 
@@ -164,8 +179,8 @@ class MplGraphicsModulated(FigureCanvas):
         :param y_list: Список значений.
         :return: None.
         """
-        self.ax6.plot(x_list, y_list, linestyle="-", markersize=2, color='purple')
-        self.ax6.margins(y=0.2, x=0.01)
+        self.ax7.plot(x_list, y_list, linestyle="-", markersize=2, color='purple')
+        self.ax7.margins(y=0.2, x=0.01)
 
     def clear_plot_ax1(self):
         """
@@ -219,4 +234,13 @@ class MplGraphicsModulated(FigureCanvas):
         :return: None.
         """
         self.ax6.clear()
+        self.add_text()
+
+    def clear_plot_ax7(self):
+        """
+        Очистка области графика.
+
+        :return: None.
+        """
+        self.ax7.clear()
         self.add_text()
