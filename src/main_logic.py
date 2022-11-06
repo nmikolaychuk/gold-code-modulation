@@ -89,21 +89,15 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         if graph_type == GraphType.INPUT_BITS:
             self.graphics.clear_plot_ax1()
             self.graphics.plot_graph_ax1(x, y)
-        elif graph_type == GraphType.GOLD_BITS:
+        elif graph_type == GraphType.I_COMP:
             self.graphics.clear_plot_ax2()
             self.graphics.plot_graph_ax2(x, y)
-        elif graph_type == GraphType.I_COMP:
+        elif graph_type == GraphType.Q_COMP:
             self.graphics.clear_plot_ax3()
             self.graphics.plot_graph_ax3(x, y)
-        elif graph_type == GraphType.Q_COMP:
-            self.graphics.clear_plot_ax4()
-            self.graphics.plot_graph_ax4(x, y)
-        elif graph_type == GraphType.QPSK:
+        elif graph_type == GraphType.RESTORED:
             self.graphics.clear_plot_ax5()
             self.graphics.plot_graph_ax5(x, y)
-        elif graph_type == GraphType.RESTORED:
-            self.graphics.clear_plot_ax7()
-            self.graphics.plot_graph_ax7(x, y)
 
         self.graphics.draw()
         self.graphics.flush_events()
@@ -113,8 +107,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Отобразить отклики согласованных фильтров.
         """
-        self.graphics.clear_plot_ax6()
-        self.graphics.plot_graph_ax6(x1, y1, x2, y2, x3, y3, x4, y4)
+        self.graphics.clear_plot_ax4()
+        self.graphics.plot_graph_ax4(x1, y1, x2, y2, x3, y3, x4, y4)
         self.graphics.draw()
         self.graphics.flush_events()
 
@@ -137,53 +131,46 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         in_b_x, in_b_y = self.signal_generator.get_bits_to_plot(bits)
         self.draw(GraphType.INPUT_BITS, in_b_x, in_b_y)
 
-        # Замена входных бит на соответствующие последовательности Голда
-        gold_bits = self.signal_generator.get_gold_bits()
-        self.signal_generator.gold_bits = gold_bits
-        gold_b_x, gold_b_y = self.signal_generator.get_bits_to_plot(gold_bits)
-        self.draw(GraphType.GOLD_BITS, gold_b_x, gold_b_y)
-
         # Получение IQ компонент
-        i_comp, q_comp = self.signal_generator.get_qpsk_components(self.signal_generator.gold_bits)
-        self.signal_generator.i_component = i_comp
-        self.signal_generator.q_component = q_comp
-        i_comp_x, i_comp_y = self.signal_generator.get_bits_to_plot(i_comp)
-        q_comp_x, q_comp_y = self.signal_generator.get_bits_to_plot(q_comp)
-        self.draw(GraphType.I_COMP, i_comp_x, i_comp_y)
-        self.draw(GraphType.Q_COMP, q_comp_x, q_comp_y)
+        i_comp, q_comp = self.signal_generator.get_qpsk_components(self.signal_generator.input_bits)
+        # Заменить на коды Голда
+        i_comp_gold = self.signal_generator.get_gold_bits(i_comp)
+        q_comp_gold = self.signal_generator.get_gold_bits(q_comp)
+        # Наложить шум на полученные последовательности бит
+        _, i_comp_noise = self.signal_generator.generate_noise([[], i_comp_gold])
+        _, q_comp_noise = self.signal_generator.generate_noise([[], q_comp_gold])
+        self.signal_generator.i_component = i_comp_noise
+        self.signal_generator.q_component = q_comp_noise
+        i_plot = self.signal_generator.get_bits_to_plot(i_comp_noise)
+        q_plot = self.signal_generator.get_bits_to_plot(q_comp_noise)
+        self.draw(GraphType.I_COMP, i_plot[0], i_plot[1])
+        self.draw(GraphType.Q_COMP, q_plot[0], q_plot[1])
 
-        # Получение QPSK сигнала
-        qpsk = self.signal_generator.calc_modulated_signal(i_comp, q_comp)
-        # Зашумление QPSK сигнала
-        qpsk = self.signal_generator.generate_noise(qpsk)
-        self.signal_generator.qpsk_signal = qpsk
-        self.draw(GraphType.QPSK, qpsk[0], qpsk[1])
+        print(complex(i_comp_noise[0], q_comp_noise[0]))
 
-        # Свёртка QPSK сигнала с импульсными характеристиками согласованных фильтров
-        if self.signal_generator.filters:
-            responses = self.signal_generator.calc_convolution(qpsk)
-            self.signal_generator.response_signal = responses
-            self.draw_responses(responses[0][0], responses[0][1],
-                                responses[1][0], responses[1][1],
-                                responses[2][0], responses[2][1],
-                                responses[3][0], responses[3][1])
-
-            # Анализ максимумов откликов
-            resotred_bits = self.signal_generator.restore_input_bits(responses)
+        # # Свёртка QPSK сигнала с импульсными характеристиками согласованных фильтров
+        # if self.signal_generator.filters:
+        #     responses = self.signal_generator.calc_convolution(qpsk)
+        #     self.signal_generator.response_signal = responses
+        #     self.draw_responses(responses[0][0], responses[0][1],
+        #                         responses[1][0], responses[1][1],
+        #                         responses[2][0], responses[2][1],
+        #                         responses[3][0], responses[3][1])
+        #
+        #     # Анализ максимумов откликов
+        #     resotred_bits = self.signal_generator.restore_input_bits(responses)
 
     def calc_filters_logic(self):
         """
         Рассчитать согласованные фильтры.
         """
         # 1. ФМ4 модуляция каждого кода Голда
-        self.signal_generator.filters.clear()
-        for k, v in self.signal_generator.gold_codes.items():
-            # Получение IQ компонент
-            i, q = self.signal_generator.get_qpsk_components(v)
-            # Вычисление QPSK
-            qpsk = self.signal_generator.calc_modulated_signal(i, q)
-            # Зеркалирование QPSK
-            self.signal_generator.filters[k] = [qpsk[0], qpsk[1][::-1]]
+        # self.signal_generator.filters.clear()
+        # for k, v in self.signal_generator.gold_codes.items():
+        #     # Получение IQ компонент
+        #     i, q = self.signal_generator.get_qpsk_components(v)
+        #     # Зеркалирование QPSK
+        #     self.signal_generator.filters[k] = [qpsk[0], qpsk[1][::-1]]
         print("Импульсные характеристики согласованных фильтров успешно рассчитаны!")
 
     def start_research_logic(self):

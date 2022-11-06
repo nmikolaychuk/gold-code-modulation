@@ -139,21 +139,21 @@ class SignalGenerator:
         m_seq2 = self.get_shifted_m_sequence(self.m_seq2, 3)
         self.gold_codes["11"] = self.calc_sum_m_sequence(self.m_seq1, m_seq2)
 
-    def get_gold_bits(self):
+    def get_gold_bits(self, bits: list):
         """
-        Замена исходных битов на соответствующие коды Голда.
+        Замена битов на соответствующие коды Голда.
 
         :return: None.
         """
         add_to_end = None
         output_bits = []
-        bits = self.input_bits.copy()
+        bits_cpy = bits
         if len(bits) % 2 == 1:
-            add_to_end = bits[-1]
-            del bits[-1]
+            add_to_end = bits_cpy[-1]
+            del bits_cpy[-1]
 
-        for i in range(0, len(bits), 2):
-            symbol = str(self.input_bits[i]) + str(self.input_bits[i+1])
+        for i in range(0, len(bits_cpy), 2):
+            symbol = str(bits[i]) + str(bits[i+1])
             for item in self.gold_codes[symbol]:
                 output_bits.append(item)
 

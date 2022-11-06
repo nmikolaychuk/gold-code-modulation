@@ -6,12 +6,10 @@ class GraphType(Enum):
     Типы графиков для отрисовки
     """
     INPUT_BITS = 0
-    GOLD_BITS = 1
-    I_COMP = 2
-    Q_COMP = 3
-    QPSK = 4
-    RESPONSE = 5
-    RESTORED = 6
+    I_COMP = 1
+    Q_COMP = 2
+    RESPONSE = 3
+    RESTORED = 4
 
 
 class ShiftRegisterType(Enum):
