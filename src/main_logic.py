@@ -131,46 +131,57 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         in_b_x, in_b_y = self.signal_generator.get_bits_to_plot(bits)
         self.draw(GraphType.INPUT_BITS, in_b_x, in_b_y)
 
-        # Получение IQ компонент
-        i_comp, q_comp = self.signal_generator.get_qpsk_components(self.signal_generator.input_bits)
         # Заменить на коды Голда
-        i_comp_gold = self.signal_generator.get_gold_bits(i_comp)
-        q_comp_gold = self.signal_generator.get_gold_bits(q_comp)
-        # Наложить шум на полученные последовательности бит
-        _, i_comp_noise = self.signal_generator.generate_noise([[], i_comp_gold])
-        _, q_comp_noise = self.signal_generator.generate_noise([[], q_comp_gold])
-        self.signal_generator.i_component = i_comp_noise
-        self.signal_generator.q_component = q_comp_noise
-        i_plot = self.signal_generator.get_bits_to_plot(i_comp_noise)
-        q_plot = self.signal_generator.get_bits_to_plot(q_comp_noise)
+        if self.signal_generator.bits_count % 2 != 0:
+            print("Указано некорректное количество информационных бит")
+            return
+
+        gold_bits = self.signal_generator.get_gold_bits(bits)
+        self.signal_generator.gold_bits = gold_bits
+
+        # Получение IQ компонент
+        i_comp, q_comp = self.signal_generator.get_qpsk_components(self.signal_generator.gold_bits)
+
+        # # TODO: Наложить шум на полученные последовательности бит
+        # _, i_comp_noise = self.signal_generator.generate_noise([[], i_comp_gold])
+        # _, q_comp_noise = self.signal_generator.generate_noise([[], q_comp_gold])
+
+        # Отрисовка битов
+        self.signal_generator.i_component = i_comp
+        self.signal_generator.q_component = q_comp
+        i_plot = self.signal_generator.get_bits_to_plot(i_comp)
+        q_plot = self.signal_generator.get_bits_to_plot(q_comp)
         self.draw(GraphType.I_COMP, i_plot[0], i_plot[1])
         self.draw(GraphType.Q_COMP, q_plot[0], q_plot[1])
 
-        print(complex(i_comp_noise[0], q_comp_noise[0]))
+        # Получить комплексную огибающую исходной последовательности
+        z = self.signal_generator.get_complex_array(i_comp, q_comp)
 
-        # # Свёртка QPSK сигнала с импульсными характеристиками согласованных фильтров
-        # if self.signal_generator.filters:
-        #     responses = self.signal_generator.calc_convolution(qpsk)
-        #     self.signal_generator.response_signal = responses
-        #     self.draw_responses(responses[0][0], responses[0][1],
-        #                         responses[1][0], responses[1][1],
-        #                         responses[2][0], responses[2][1],
-        #                         responses[3][0], responses[3][1])
-        #
-        #     # Анализ максимумов откликов
-        #     resotred_bits = self.signal_generator.restore_input_bits(responses)
+        # Свёртка QPSK сигнала с импульсными характеристиками согласованных фильтров
+        if self.signal_generator.filters:
+            responses = self.signal_generator.calc_convolution(z)
+            self.signal_generator.response_signal = responses
+            self.draw_responses(responses[0][0], responses[0][1],
+                                responses[1][0], responses[1][1],
+                                responses[2][0], responses[2][1],
+                                responses[3][0], responses[3][1])
+
+            # Анализ максимумов откликов
+            # resotred_bits = self.signal_generator.restore_input_bits(responses)
 
     def calc_filters_logic(self):
         """
         Рассчитать согласованные фильтры.
         """
         # 1. ФМ4 модуляция каждого кода Голда
-        # self.signal_generator.filters.clear()
-        # for k, v in self.signal_generator.gold_codes.items():
-        #     # Получение IQ компонент
-        #     i, q = self.signal_generator.get_qpsk_components(v)
-        #     # Зеркалирование QPSK
-        #     self.signal_generator.filters[k] = [qpsk[0], qpsk[1][::-1]]
+        self.signal_generator.filters.clear()
+        for k, v in self.signal_generator.gold_codes.items():
+            # Получение IQ компонент
+            i, q = self.signal_generator.get_qpsk_components(v)
+            # Получение комплексной огибающей
+            z = self.signal_generator.get_complex_array(i, q)
+            # Зеркалирование QPSK
+            self.signal_generator.filters[k] = z[::-1]
         print("Импульсные характеристики согласованных фильтров успешно рассчитаны!")
 
     def start_research_logic(self):
@@ -196,7 +207,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Обработка события изменения значения в поле "Количество информационных бит".
         """
-        if self.bits_count_edit.text().isdigit():
+        new_value = self.bits_count_edit.text()
+        if new_value.isdigit() and int(new_value) % 2 == 0:
             self.signal_generator.bits_count = float(self.bits_count_edit.text())
 
     def bits_per_second_change_logic(self):

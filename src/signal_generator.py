@@ -145,20 +145,11 @@ class SignalGenerator:
 
         :return: None.
         """
-        add_to_end = None
         output_bits = []
-        bits_cpy = bits
-        if len(bits) % 2 == 1:
-            add_to_end = bits_cpy[-1]
-            del bits_cpy[-1]
-
-        for i in range(0, len(bits_cpy), 2):
+        for i in range(0, len(bits), 2):
             symbol = str(bits[i]) + str(bits[i+1])
             for item in self.gold_codes[symbol]:
                 output_bits.append(item)
-
-        if add_to_end is not None:
-            output_bits.append(add_to_end)
         return output_bits
 
     @staticmethod
@@ -177,7 +168,9 @@ class SignalGenerator:
         for i in range(len(bits)):
             if i % 2 == 0:
                 i_component.append(bits[i])
+                i_component.append(bits[i])
             else:
+                q_component.append(bits[i])
                 q_component.append(bits[i])
         return i_component, q_component
 
@@ -206,30 +199,51 @@ class SignalGenerator:
             y.append(i_buf * np.cos(w * t) - q_buf * np.sin(w * t))
         return x, y
 
-    def calc_convolution(self, qpsk: list):
+    def calc_convolution(self, z: list):
         """
         Получить свёртку QPSK сигнала с импульсными характеристиками согласованных фильтров.
 
-        :param qpsk: ФМ4 модулированный сигнал.
+        :param z: Комплексная огибающая сигнала.
         :return: Отклики.
         """
         if not self.filters:
             return
 
         outputs = []
-        big_signal_length = len(qpsk[1])
-        research = np.array(qpsk[1])
+        big_signal_length = len(z)
+        research = np.array(z)
+        research = research - research.mean(keepdims=True)
         for k, v in self.filters.items():
             x, y = [], []
-            small_signal_length = len(v[1])
-            modulate = np.array(v[1])
+            small_signal_length = len(v)
+            modulate = np.array(v)
+            modulate = modulate - modulate.mean(keepdims=True)
             for i in np.arange(0, big_signal_length - small_signal_length - 1):
-                summary = np.sum(np.multiply(modulate, research[i:small_signal_length+i])) / small_signal_length
-                x.append(qpsk[0][i])
-                y.append(summary)
+                z = np.sum(np.multiply(modulate, research[i:small_signal_length + i])) / small_signal_length
+                x.append(i)
+                y.append(np.sqrt(z.real ** 2 + z.imag ** 2))
             outputs.append([x, y])
 
         return outputs
+
+    @staticmethod
+    def get_complex_array(i_comp: list, q_comp: list):
+        """
+        Получить комплексную огибающую сигнала по квадратурным компонентам.
+
+        :param i_comp: Синфазная компонента.
+        :param q_comp: Квадратурная компонента.
+        :return: Комплексный список.
+        """
+        if len(i_comp) > len(q_comp):
+            q_comp.append(0)
+            q_comp.append(0)
+
+        output = []
+        for i in range(len(i_comp)):
+            output.append(complex(i_comp[i], q_comp[i]))
+
+        return output
 
     def restore_input_bits(self, responses: list):
         """
@@ -245,7 +259,6 @@ class SignalGenerator:
             pos = [resp[0][i] for i, v in enumerate(resp[1]) if v >= avg_value]
             print(len(pos))
             positions[symbols[i]] = pos
-
 
     @staticmethod
     def _calc_signal_energy(signal: list):
