@@ -222,36 +222,38 @@ class SignalGenerator:
 
         :return: Биты.
         """
-        restored = {}
-        # Получение положений пиков
+        # Количество переданных символов
+        bits_count = int(self.bits_count / 2)
+        # Количество отсчетов после корреляции
+        length = len(responses[0][1])
+        # Интервал, в котором обязательно находится пик
+        interval_for_max = int(length / bits_count)
+        # Возможные символы в сообщении
         symbols = list(self.gold_codes.keys())
-        for k, resp in enumerate(responses):
-            avg = 3.0 * np.average(resp[1])
-            m = np.max(resp[1])
-            print(avg, m)
-            if m <= avg:
-                continue
 
-            x = [resp[0][i] for i, j in enumerate(resp[1]) if j > avg]
-            restored[symbols[k]] = x
-
-        # Получение хронологической последовательности
-        x_vals = list(itertools.chain(*list(restored.values())))
-        x_vals.sort()
-        result = []
-        for val in x_vals:
-            for k, v in restored.items():
-                if val in v:
-                    result.append(k)
-                    break
+        # Анализ каждого интервала
+        output = []
+        for i in range(0, length, interval_for_max):
+            begin = i
+            end = i + interval_for_max
+            # Нахождение максимума среди всех откликов
+            resp_index = None
+            max_value = 0
+            for j, resp in enumerate(responses):
+                current_max = np.max(resp[1][begin:end])
+                if current_max > max_value:
+                    max_value = current_max
+                    resp_index = j
+            # Добавление наиболее вероятного символа в результат
+            output.append(symbols[resp_index])
 
         # Постобработка восстановленной последовательности
-        output = []
-        for item in result:
+        result = []
+        for item in output:
             for i in item:
-                output.append(int(i))
+                result.append(int(i))
 
-        return output
+        return result
 
     @staticmethod
     def _calc_signal_energy(signal: list):
