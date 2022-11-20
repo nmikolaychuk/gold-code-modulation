@@ -4,6 +4,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from main_interface import Ui_MainWindow
 from mpl_widget import MplGraphicsModulated, MplGraphicsResearch
 from signal_generator import SignalGenerator
+from research_logic import calc_research
 from defaults import *
 from enums import *
 
@@ -54,20 +55,15 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.start_research_button.clicked.connect(self.start_research_logic)
 
         # Инициализация значений по умолчанию
-        self.stacked_widget.setCurrentWidget(self.parameters_page)
         self.full_screen_geometry = screen
         self.last_geometry = None
-        self.sampling_rate_edit.setText(DEFAULT_SAMPLING_RATE)
         self.snr_edit.setText(DEFAULT_SNR)
         self.bits_count_edit.setText(DEFAULT_BITS_COUNT)
-        self.bits_per_second_edit.setText(DEFAULT_BITS_PER_SECOND)
         self.average_count_edit.setText(DEFAULT_AVERAGE_COUNT)
         self.signal_generator = SignalGenerator()
 
         # Обработка событий редактирования параметров
-        self.sampling_rate_edit.textChanged.connect(self.sr_change_logic)
         self.bits_count_edit.textChanged.connect(self.bits_count_change_logic)
-        self.bits_per_second_edit.textChanged.connect(self.bits_per_second_change_logic)
         self.snr_edit.textChanged.connect(self.snr_change_logic)
 
         # Инициализация основных графиков
@@ -167,12 +163,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
                                 responses[3][0], responses[3][1])
 
             # Анализ максимумов откликов
-            resotred_bits = self.signal_generator.restore_input_bits(responses)
-            self.signal_generator.restored_bits = resotred_bits
-            restored_plot = self.signal_generator.get_bits_to_plot(resotred_bits)
+            restored_bits = self.signal_generator.restore_input_bits(responses)
+            self.signal_generator.restored_bits = restored_bits
+            restored_plot = self.signal_generator.get_bits_to_plot(restored_bits)
             self.draw(GraphType.RESTORED, restored_plot[0], restored_plot[1])
             print(bits)
-            print(resotred_bits)
+            print(restored_bits)
 
     def calc_filters_logic(self):
         """
@@ -199,14 +195,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         except ValueError:
             return
 
-        print("calc_research")
-
-    def sr_change_logic(self):
-        """
-        Обработка события изменения значения в поле "Частота дискретизации".
-        """
-        if self.sampling_rate_edit.text().isdigit():
-            self.signal_generator.sampling_rate = float(self.sampling_rate_edit.text())
+        x, y = calc_research(average_count)
+        self.draw_ber_of_snr(x, y)
 
     def bits_count_change_logic(self):
         """
@@ -215,13 +205,6 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         new_value = self.bits_count_edit.text()
         if new_value.isdigit() and int(new_value) % 2 == 0:
             self.signal_generator.bits_count = float(self.bits_count_edit.text())
-
-    def bits_per_second_change_logic(self):
-        """
-        Обработка события изменения значения в поле "Скорость передачи данных".
-        """
-        if self.bits_per_second_edit.text().isdigit():
-            self.signal_generator.bits_per_second = float(self.bits_per_second_edit.text())
 
     def snr_change_logic(self):
         """

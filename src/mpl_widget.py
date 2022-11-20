@@ -33,11 +33,10 @@ class MplGraphicsResearch(FigureCanvas):
 
     def plot_graph(self, x: list, y: list):
         """
-        Построение графика функции модулированного сигнала.
+        Построение графика ошибки восстановления от snr.
         """
-        self.ax.plot(x, y, linestyle="-", markersize=2, color='g', label="Исходный информационный сигнал")
-        self.ax.legend(loc="upper right", framealpha=1.0)
-        self.ax.margins(y=0.8)
+        self.ax.plot(x, y, linestyle="-", markersize=2, color='g')
+        self.ax.margins(y=0.1)
 
     def clear_plot(self):
         """

@@ -2,7 +2,6 @@ import random
 import numpy as np
 from collections import deque
 from statsmodels.api import tsa
-import itertools
 
 
 from defaults import *
@@ -13,15 +12,11 @@ class SignalGenerator:
     """
     Объект для генерации опорного сигнала
     """
-    def __init__(self, s_r=DEFAULT_SAMPLING_RATE, b_count=DEFAULT_BITS_COUNT,
-                 bps=DEFAULT_BITS_PER_SECOND, snr=DEFAULT_SNR):
+    def __init__(self, b_count=DEFAULT_BITS_COUNT, snr=DEFAULT_SNR):
 
         # Параметры сигнала
-        self.sampling_rate = float(s_r)
         self.bits_count = int(b_count)
-        self.bits_per_second = float(bps)
         self.snr = float(snr)
-        self.signal_freq = 20000
 
         # Буферы для хранения сигналов
         self.input_bits = []
@@ -50,22 +45,6 @@ class SignalGenerator:
             bits.append(x)
 
         return bits
-
-    def _get_signal_parameters(self, sf: float, bits_count: int):
-        """
-        Рассчитать параметры сигналов.
-        """
-        # Длительность одного бита
-        bit_time = 1. / self.bits_per_second
-        # Длительность сигнала
-        signal_duration = bit_time * bits_count
-        # Частота опорного сигнала
-        w = 2. * np.pi * sf
-        # Количество отсчётов сигнала
-        n = self.sampling_rate * signal_duration
-        # Шаг времени
-        timestep = signal_duration / n
-        return signal_duration, timestep, bit_time, w
 
     @staticmethod
     def get_m_sequence(shift_type: ShiftRegisterType):
