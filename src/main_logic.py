@@ -142,20 +142,20 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         # Получение IQ компонент
         i_comp, q_comp = self.signal_generator.get_qpsk_components(self.signal_generator.gold_bits)
 
-        # # TODO: Наложить шум на полученные последовательности бит
-        # _, i_comp_noise = self.signal_generator.generate_noise([[], i_comp_gold])
-        # _, q_comp_noise = self.signal_generator.generate_noise([[], q_comp_gold])
+        # Наложить шум на полученные последовательности бит
+        _, i_comp_noise = self.signal_generator.generate_noise([[], i_comp])
+        _, q_comp_noise = self.signal_generator.generate_noise([[], q_comp])
 
         # Отрисовка битов
-        self.signal_generator.i_component = i_comp
-        self.signal_generator.q_component = q_comp
+        self.signal_generator.i_component = i_comp_noise
+        self.signal_generator.q_component = q_comp_noise
         i_plot = self.signal_generator.get_bits_to_plot(i_comp)
         q_plot = self.signal_generator.get_bits_to_plot(q_comp)
         self.draw(GraphType.I_COMP, i_plot[0], i_plot[1])
         self.draw(GraphType.Q_COMP, q_plot[0], q_plot[1])
 
         # Получить комплексную огибающую исходной последовательности
-        z = self.signal_generator.get_complex_array(i_comp, q_comp)
+        z = self.signal_generator.get_complex_array(i_comp_noise, q_comp_noise)
 
         # Свёртка QPSK сигнала с импульсными характеристиками согласованных фильтров
         if self.signal_generator.filters:
@@ -167,7 +167,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
                                 responses[3][0], responses[3][1])
 
             # Анализ максимумов откликов
-            # resotred_bits = self.signal_generator.restore_input_bits(responses)
+            resotred_bits = self.signal_generator.restore_input_bits(responses)
+            self.signal_generator.restored_bits = resotred_bits
+            restored_plot = self.signal_generator.get_bits_to_plot(resotred_bits)
+            self.draw(GraphType.RESTORED, restored_plot[0], restored_plot[1])
+            print(bits)
+            print(resotred_bits)
 
     def calc_filters_logic(self):
         """
@@ -181,7 +186,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             # Получение комплексной огибающей
             z = self.signal_generator.get_complex_array(i, q)
             # Зеркалирование QPSK
-            self.signal_generator.filters[k] = z[::-1]
+            self.signal_generator.filters[k] = z
         print("Импульсные характеристики согласованных фильтров успешно рассчитаны!")
 
     def start_research_logic(self):

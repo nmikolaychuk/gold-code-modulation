@@ -134,10 +134,11 @@ class MplGraphicsModulated(FigureCanvas):
 
         :return: None.
         """
-        self.ax4.plot(x1, y1, linestyle="-", markersize=2, color='darksalmon')
-        self.ax4.plot(x2, y2, linestyle="-", markersize=2, color='olivedrab')
-        self.ax4.plot(x3, y3, linestyle="-", markersize=2, color='darkkhaki')
-        self.ax4.plot(x4, y4, linestyle="-", markersize=2, color='cornflowerblue')
+        self.ax4.plot(x1, y1, linestyle="-", color='darksalmon', label="00")
+        self.ax4.plot(x2, y2, linestyle="-", color='olivedrab', label='01')
+        self.ax4.plot(x3, y3, linestyle="-", color='darkkhaki', label='10')
+        self.ax4.plot(x4, y4, linestyle="-", color='cornflowerblue', label='11')
+        self.ax4.legend(loc="upper right")
         self.ax4.margins(y=0.2, x=0.01)
 
     def plot_graph_ax5(self, x_list: list, y_list: list):

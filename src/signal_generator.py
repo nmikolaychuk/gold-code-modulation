@@ -1,6 +1,9 @@
 import random
 import numpy as np
 from collections import deque
+from statsmodels.api import tsa
+import itertools
+
 
 from defaults import *
 from enums import *
@@ -159,6 +162,9 @@ class SignalGenerator:
 
         :return: I и Q компоненты.
         """
+        if len(bits) % 2 != 0:
+            bits.append(0)
+
         i_component = []
         q_component = []
 
@@ -168,36 +174,9 @@ class SignalGenerator:
         for i in range(len(bits)):
             if i % 2 == 0:
                 i_component.append(bits[i])
-                i_component.append(bits[i])
             else:
                 q_component.append(bits[i])
-                q_component.append(bits[i])
         return i_component, q_component
-
-    def calc_modulated_signal(self, i_c: list, q_c: list):
-        """
-        Построить ФМ4 манипулированный сигнал.
-        """
-        x, y = [], []
-        bits_count = len(i_c) + len(q_c)
-        signal_duration, timestep, bit_time, w = self._get_signal_parameters(self.signal_freq, bits_count)
-        iq_step = signal_duration / (bits_count / 2.)
-        for t in np.arange(0, signal_duration, timestep):
-            iq_index = int(t / iq_step)
-
-            try:
-                i_buf = -1 if i_c[iq_index] == 0 else 1
-            except IndexError:
-                i_buf = 0
-
-            try:
-                q_buf = -1 if q_c[iq_index] == 0 else 1
-            except IndexError:
-                q_buf = 0
-
-            x.append(t)
-            y.append(i_buf * np.cos(w * t) - q_buf * np.sin(w * t))
-        return x, y
 
     def calc_convolution(self, z: list):
         """
@@ -209,22 +188,18 @@ class SignalGenerator:
         if not self.filters:
             return
 
-        outputs = []
-        big_signal_length = len(z)
+        output = []
         research = np.array(z)
         research = research - research.mean(keepdims=True)
         for k, v in self.filters.items():
-            x, y = [], []
-            small_signal_length = len(v)
             modulate = np.array(v)
             modulate = modulate - modulate.mean(keepdims=True)
-            for i in np.arange(0, big_signal_length - small_signal_length - 1):
-                z = np.sum(np.multiply(modulate, research[i:small_signal_length + i])) / small_signal_length
-                x.append(i)
-                y.append(np.sqrt(z.real ** 2 + z.imag ** 2))
-            outputs.append([x, y])
 
-        return outputs
+            y = np.abs(np.correlate(research, modulate, 'same'))
+            x = [i for i in range(len(y))]
+
+            output.append([x, y])
+        return output
 
     @staticmethod
     def get_complex_array(i_comp: list, q_comp: list):
@@ -235,10 +210,6 @@ class SignalGenerator:
         :param q_comp: Квадратурная компонента.
         :return: Комплексный список.
         """
-        if len(i_comp) > len(q_comp):
-            q_comp.append(0)
-            q_comp.append(0)
-
         output = []
         for i in range(len(i_comp)):
             output.append(complex(i_comp[i], q_comp[i]))
@@ -251,14 +222,36 @@ class SignalGenerator:
 
         :return: Биты.
         """
-        positions = {}
+        restored = {}
+        # Получение положений пиков
         symbols = list(self.gold_codes.keys())
-        for i, resp in enumerate(responses):
-            avg_value = max(resp[1]) - sum(resp[1]) / len(resp[1])
-            print(avg_value)
-            pos = [resp[0][i] for i, v in enumerate(resp[1]) if v >= avg_value]
-            print(len(pos))
-            positions[symbols[i]] = pos
+        for k, resp in enumerate(responses):
+            avg = 3.0 * np.average(resp[1])
+            m = np.max(resp[1])
+            print(avg, m)
+            if m <= avg:
+                continue
+
+            x = [resp[0][i] for i, j in enumerate(resp[1]) if j > avg]
+            restored[symbols[k]] = x
+
+        # Получение хронологической последовательности
+        x_vals = list(itertools.chain(*list(restored.values())))
+        x_vals.sort()
+        result = []
+        for val in x_vals:
+            for k, v in restored.items():
+                if val in v:
+                    result.append(k)
+                    break
+
+        # Постобработка восстановленной последовательности
+        output = []
+        for item in result:
+            for i in item:
+                output.append(int(i))
+
+        return output
 
     @staticmethod
     def _calc_signal_energy(signal: list):
@@ -333,3 +326,12 @@ class SignalGenerator:
                 y.append(bits[i])
 
         return x, y
+
+    @staticmethod
+    def calc_acf(x1: list, x2: list):
+        """
+        Вычислить взаимную корреляционную функцию.
+        """
+        acf_y = tsa.stattools.ccf(x1, x2, adjusted=False)
+        acf_x = [i for i in range(len(acf_y))]
+        return [acf_x, acf_y]
